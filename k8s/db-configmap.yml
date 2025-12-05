@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: flaskapp
+data:
+  DB_HOST: "postgres-db.flaskapp.svc.cluster.local"
+  DB_NAME: "pg-flaskapp"
+  DB_PORT: "5432"
+  FLASK_DEBUG: "0"

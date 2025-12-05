@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migration
+  namespace: flaskapp
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: heschmat/flaskapp-api:latest # your-backend-image:latest
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Starting migrations..."
+            flask db upgrade &&
+            echo "Checking if seed data is needed..." &&
+            PGPASSWORD="$DB_PASSWORD" psql \
+                -h "$DB_HOST" \
+                -p "$DB_PORT" \
+                -U "$DB_USER" \
+                -d "$DB_NAME" \
+                -t -c "SELECT COUNT(*) FROM topics;" | grep -q "0" &&
+              python seed_data.py || echo "Database already contains data"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: db-secrets

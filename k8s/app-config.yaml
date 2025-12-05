@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: flaskapp
+data:
+  # FLASK_DEBUG: "false"
+  FLASK_DEBUG: "1"
+  DB_PORT: "5432"
+  DB_NAME: "pg-flaskapp"
+  DB_HOST: "pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com"
+  DB_USER: "localadmin"

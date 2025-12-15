@@ -8,5 +8,5 @@ data:
   FLASK_DEBUG: "1"
   DB_PORT: "5432"
   DB_NAME: "pg-flaskapp"
-  DB_HOST: "pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com"
+  DB_HOST: "postgres-rds.flaskapp.svc.cluster.local"
   DB_USER: "localadmin"

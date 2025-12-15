@@ -1,0 +1,41 @@
+## AWS
+export AWS_ACCOUNT_ID=974234362642
+export AWS_REGION=us-east-1
+
+## eks
+export CLUSTER_NAME=flask-rds-eks
+export NODEGROUP_NAME=standard-workers
+export CLUSTER_NS=flaskapp
+
+NS=$CLUSTER_NS
+
+## rds
+# export DB_SUBNET_GRP_NAME=flaskapp-rds-subnet-grp
+# export DB_SG_NAME=pg-flaskapp-sg
+# export DB_NAME=pg-flaskapp
+# export DB_USERNAME=localadmin
+# export DB_PASSWORD=SuperSecretDBPass2731
+# export DB_INSTANCE_CLS=db.t3.small
+export RDS_DB_SUBNET_GROUP_NAME=flaskapp-rds-subnet-grp
+export RDS_SG_NAME=pg-flaskapp-sg
+export RDS_DB_NAME=pg-flaskapp
+export RDS_USERNAME=localadmin
+export RDS_PASSWORD=SuperSecretDBPass2731
+export RDS_INSTANCE_CLASS=db.t3.small
+export RDS_DB_SUBNET_GROUP_NAME=flaskapp-rds-subnet-grp
+export RDS_ENDPOINT_ALIAS=postgres-rds.flaskapp.svc.cluster.local
+
+## alias
+alias k=kubectl
+alias kgp="k get pods"
+
+##
+export DB_ENDPOINT=pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com
+
+export RDS_SG_ID=sg-0c04bcf06ec9e2988
+
+
+## ALB =====
+ALB_POLICY_NAME=AWSLBControllerIAMPolicy
+IAM_SA_NAME=aws-lb-ctl
+

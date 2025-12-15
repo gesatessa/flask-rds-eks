@@ -6,7 +6,7 @@ metadata:
   labels:
     app: frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: heschmat/flaskapp-fe:latest
+        image: heschmat/flaskapp-fe:v4
         imagePullPolicy: Always
         ports:
         - containerPort: 80

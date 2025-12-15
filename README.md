@@ -13,7 +13,7 @@ eksctl create cluster \
   --version 1.33 \
   --nodegroup-name $NODEGROUP_NAME \
   --node-type t3.small \
-  --nodes 1 \
+  --nodes 2 \
   --nodes-min 1 \
   --nodes-max 4 \
   --managed
@@ -141,14 +141,14 @@ kubectl run psql-client --image=postgres:17 --restart=Never -- sh -c "sleep 3600
 
 # exec into the pod
 # kubectl exec -it psql-client -- bash
-kubectl exec -it psql-client -- env DB_ENDPOINT=$DB_ENDPOINT DB_USER=$DB_USERNAME DB_PASS=$DB_PASSWORD bash
+kubectl exec -it psql-client -- env DB_HOST=$RDS_ENDPOINT_ALIAS DB_USER=$RDS_USERNAME DB_PASS=$RDS_PASSWORD bash
 
 # from inside the pod run:
 # note: the prompt will have changed to `root@psql-client:/# `
-psql -h $DB_ENDPOINT -U $DB_USERNAME -d postgres
+psql -h $DB_HOST -U $DB_USER -d postgres
 
 # or simply:
-PGPASSWORD="$DB_PASS" psql -h "$DB_ENDPOINT" -U "$DB_USER" -d postgres
+PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d postgres
 
 
 \l
@@ -230,13 +230,19 @@ aws ec2 authorize-security-group-ingress \
 #   -n $CLUSTER_NS
 
 kubectl create secret generic db-secrets \
-  --from-literal=DATABASE_URL="postgresql://$DB_USERNAME:$DB_PASSWORD@$DB_ENDPOINT:5432/$DB_NAME" \
+  --from-literal=DATABASE_URL="postgresql://$RDS_USERNAME:$RDS_PASSWORD@$RDS_ENDPOINT_ALIAS:5432/$RDS_DB_NAME" \
   --from-literal=SECRET_KEY="change_this_secret_later" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+  --from-literal=DB_PASSWORD="$RDS_PASSWORD" \
   -n $CLUSTER_NS
+
+# N.B. make sure the arguments have correct values (e.g., DB_ENDPOINT)
+# or, ideally, map the DB_ENDPOINT to db's internal alias in `db-svc.yaml`
+kubectl apply -f db-svc.yaml
 
 kubectl apply -f app-config.yaml
 kubectl apply -f backend.yaml
+kubectl apply -f migration-job.yaml
+kubectl apply -f frontend.yaml
 
 ```
 
@@ -262,7 +268,7 @@ chmod +x migrate.sh
 #### migration job
 
 ```sh
-kubectl delete job backend-migration -n $NS
+#kubectl delete job backend-migration -n $NS
 kubectl apply -f migration-job.yaml
 
 k logs job/backend-migration -n $NS
@@ -301,8 +307,9 @@ kubectl rollout restart deploy backend -n $CLUSTER_NS
 kubectl exec -it backend-57f76d96f-7l6ph -n $NS -- curl -I http://backend:8000
 
 # --------------- if everything works out well: 👇
-kubectl run curlpod -n $NS --rm -it --image=curlimages/curl -- sh
+kubectl run curlpod -n $CLUSTER_NS --rm -it --image=curlimages/curl -- sh
 # curl -I http://backend:8000
+# or: curl <backend_pod_internal_ip>:8000/api/topics
 
 curl http://backend:8000/api/topics
 
@@ -329,27 +336,78 @@ kubectl run -it --rm --restart=Never dns-test --image=tutum/dnsutils \
 
 ```
 
+## ingress
+
+```sh
+# Set up an IAM OpenID Connect (OIDC) identity provider for your EKS cluster.
+eksctl utils associate-iam-oidc-provider \
+  --region $AWS_REGION \
+  --cluster $CLUSTER_NAME \
+  --approve
+
+```
+
+
+```sh
+curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/release-2.11/docs/install/iam_policy.json
+
+
+# Create IAM Policy
+aws iam create-policy \
+  --policy-name $ALB_POLICY_NAME \
+  --policy-document file://iam_policy.json
+
+# Remove the policy document:
+rm iam_policy.json
+
+# Use eksctl to bind the above policy to a Kubernetes service account:
+eksctl create iamserviceaccount \
+  --cluster $CLUSTER_NAME \
+  --namespace kube-system \
+  --name $IAM_SA_NAME \
+  --role-name AWSEKSLBControllerRole \
+  --attach-policy-arn arn:aws:iam::$AWS_ACCOUNT_ID:policy/$ALB_POLICY_NAME \
+  --approve
+
+# verify
+kubectl get serviceaccount -n kube-system | grep -i aws-load-balancer-controller
+```
+
+Apply the ingress:
+```sh
+# Create ingress class and resource
+kubectl apply -f ingress.yaml
+
+# After ingress creation
+kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+
+```
+
+### debug (alb)
+
+
+
 ## clean up the resources
 ### DB
 
 ```sh
 # --db-instance-identifier $DB_INSTANCE_IDENTIFIER \
 aws rds delete-db-instance \
-  --db-instance-identifier $DB_NAME \
+  --db-instance-identifier $RDS_DB_NAME \
   --skip-final-snapshot \
   --region $AWS_REGION
 
 aws rds wait db-instance-deleted \
-  --db-instance-identifier $DB_NAME \
+  --db-instance-identifier $RDS_DB_NAME \
   --region $AWS_REGION
 
 
 aws rds delete-db-subnet-group \
-  --db-subnet-group-name $DB_SUBNET_GRP_NAME \
+  --db-subnet-group-name $RDS_DB_SUBNET_GROUP_NAME \
   --region $AWS_REGION
 
 aws ec2 delete-security-group \
-  --group-id $DB_SG_ID \
+  --group-id $RDS_SG_ID \
   --region $AWS_REGION
 ```
 

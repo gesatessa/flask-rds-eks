@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-rds
+  namespace: flaskapp
+  labels:
+    service: rds-db
+spec:
+  type: ExternalName
+  externalName: pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com
+  ports:
+  - port: 5432
+
+# It's a clean way to decouple applications from external endpoint changes.
+# Everything keeps working because they just call the internal DNS alias (instead of externalName)
+# <serviceName>.<nameSpace>.svc.cluster.local
+# in our case: postgres-rds.flaskapp.svc.cluster.local

@@ -1,0 +1,9 @@
+DB Identifier:     pg-flaskapp
+Security Group ID: sg-0a44bc0016a13cfaa
+Subnet Group:      flaskapp-rds-subnet-grp
+
+Endpoint:          pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com
+Port:              5432
+
+🔗 Connection String:
+postgresql://localadmin:SuperSecretDBPass2731@pg-flaskapp.ccq3nwlgmksx.us-east-1.rds.amazonaws.com:5432/postgres

@@ -10,7 +10,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: migrate
-        image: heschmat/flaskapp-api:latest # your-backend-image:latest
+        image: heschmat/flaskapp-api:latest # your-backend-image
         command: ["sh", "-c"]
         args:
           - |
